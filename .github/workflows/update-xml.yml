@@ -24,7 +24,7 @@ jobs:
             // Tag se version nikalna (jaise v1.0.1 se 1.0.1)
             const version = release.tag_name.replace(/^v/, '');
             
-            // Release me pehli uploaded file (ZIP) ka direct link lena
+            // Release me pehli uploaded file ka direct link lena
             const assets = release.assets;
             if (assets.length === 0) {
               throw new Error("Release me koi file upload nahi hui hai! Pehle ZIP upload karo.");
