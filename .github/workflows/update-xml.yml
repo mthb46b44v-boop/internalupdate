@@ -1,0 +1,47 @@
+name: Update update.xml on Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  update-xml:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get release version and asset URL
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const release = context.payload.release;
+            const version = release.tag_name.replace(/^v/, '');
+            const asset = release.assets.find(a => a.name.endsWith('.zip'));
+            if (!asset) {
+              core.setFailed('No ZIP asset found in release');
+              return;
+            }
+            core.setOutput('version', version);
+            core.setOutput('url', asset.browser_download_url);
+
+      - name: Update update.xml
+        run: |
+          cat > update.xml <<EOF
+          <item>
+            <version>${{ steps.release.outputs.version }}</version>
+            <url>${{ steps.release.outputs.url }}</url>
+          </item>
+          EOF
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add update.xml
+          git commit -m "Auto-update version to ${{ steps.release.outputs.version }}" || exit 0
+          git push
