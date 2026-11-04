@@ -3,6 +3,7 @@ name: Auto Update XML
 on:
   release:
     types: [published]
+  workflow_dispatch: # Taaki tum manually bhi chala sako
 
 permissions:
   contents: write
@@ -13,22 +14,27 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Update update.xml Automatically
         run: |
-          # 1. Tag se version nikaalo (jaise v1.0.2 se 1.0.2)
-          VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
-          TAG="${{ github.event.release.tag_name }}"
+          # 1. version.txt se version padho
+          if [ -f version.txt ]; then
+            VERSION=$(cat version.txt | tr -d '\r\n')
+          else
+            VERSION="1.0.2" # Fallback
+          fi
           
-          # 2. Link banao
-          URL="https://github.com/mthb46b44v-boop/internalupdate/releases/download/$TAG/YxN_UPDATED_INTERNAL_HERE.exe"
+          # 2. Link banao (Tag ke bina, kyunki tumhara tag 1.0.2 hai)
+          URL="https://github.com/mthb46b44v-boop/internalupdate/releases/download/$VERSION/YxN_UPDATED_INTERNAL_HERE.exe"
           
-          # 3. File ka Size nikaalo (Bytes me)
+          # 3. Size nikaalo
           curl -sL "$URL" -o temp.exe
           SIZE=$(stat -c%s temp.exe)
           rm temp.exe
           
-          # 4. XML file likho
+          # 4. XML likho
           echo '<item>' > update.xml
           echo "  <version>$VERSION</version>" >> update.xml
           echo "  <size>$SIZE</size>" >> update.xml
