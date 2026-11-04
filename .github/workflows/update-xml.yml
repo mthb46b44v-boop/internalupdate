@@ -22,19 +22,21 @@ jobs:
           # 2. EXE ka direct download link banao
           URL="https://github.com/mthb46b44v-boop/internalupdate/releases/download/${{ github.event.release.tag_name }}/YxN_UPDATED_INTERNAL_HERE.exe"
           
-          # 3. Nayi XML file likho
+          # 3. Download karke file ka SIZE nikaalo
+          curl -sL "$URL" -o temp.exe
+          SIZE=$(stat -c%s temp.exe)
+          rm temp.exe
+          
+          # 4. Nayi XML file likho (isme <size> bhi hai)
           echo '<item>' > update.xml
           echo "  <version>$VERSION</version>" >> update.xml
+          echo "  <size>$SIZE</size>" >> update.xml
           echo "  <url>$URL</url>" >> update.xml
           echo '</item>' >> update.xml
           
-          # 4. Check karo ki file change hui ya nahi
-          if git diff --quiet update.xml; then
-            echo "Koi change nahi hua."
-          else
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add update.xml
-            git commit -m "Auto-Updated version to $VERSION"
-            git push
-          fi
+          # 5. Commit and Push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add update.xml
+          git commit -m "Auto-Updated version to $VERSION with size $SIZE" || exit 0
+          git push
