@@ -1,4 +1,4 @@
-name: Update update.xml on Release
+name: Auto Update update.xml
 
 on:
   release:
@@ -14,34 +14,34 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Get release version and asset URL
-        id: release
+      - name: Update update.xml
         uses: actions/github-script@v7
         with:
           script: |
+            const fs = require('fs');
             const release = context.payload.release;
+            
+            // Tag se version nikalna (jaise v1.0.1 se 1.0.1)
             const version = release.tag_name.replace(/^v/, '');
-            const asset = release.assets.find(a => a.name.endsWith('.zip'));
-            if (!asset) {
-              core.setFailed('No ZIP asset found in release');
-              return;
+            
+            // Release me pehli uploaded file (ZIP) ka direct link lena
+            const assets = release.assets;
+            if (assets.length === 0) {
+              throw new Error("Release me koi file upload nahi hui hai! Pehle ZIP upload karo.");
             }
-            core.setOutput('version', version);
-            core.setOutput('url', asset.browser_download_url);
+            const zipUrl = assets[0].browser_download_url;
 
-      - name: Update update.xml
-        run: |
-          cat > update.xml <<EOF
-          <item>
-            <version>${{ steps.release.outputs.version }}</version>
-            <url>${{ steps.release.outputs.url }}</url>
-          </item>
-          EOF
+            // Naya XML content banana
+            const xmlContent = `<item>\n  <version>${version}</version>\n  <url>${zipUrl}</url>\n</item>\n`;
+            
+            // XML file me save karna
+            fs.writeFileSync('update.xml', xmlContent);
+            console.log('update.xml updated successfully with version: ' + version);
 
-      - name: Commit and push
+      - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add update.xml
-          git commit -m "Auto-update version to ${{ steps.release.outputs.version }}" || exit 0
+          git commit -m "Auto-update update.xml to version ${{ github.event.release.tag_name }}" || exit 0
           git push
