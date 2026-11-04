@@ -16,19 +16,28 @@ jobs:
 
       - name: Update update.xml Automatically
         run: |
+          # 1. Tag se version nikaalo (jaise v1.0.2 se 1.0.2)
           VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
-          URL="https://github.com/mthb46b44v-boop/internalupdate/releases/download/${{ github.event.release.tag_name }}/YxN_UPDATED_INTERNAL_HERE.exe"
           
+          # 2. Exact Tag le lo (jaise v1.0.2 ya 1.0.2)
+          TAG="${{ github.event.release.tag_name }}"
+          
+          # 3. Link banao (Bina kisi v ke chakkar ke, jo tag hai wahi use karo)
+          URL="https://github.com/mthb46b44v-boop/internalupdate/releases/download/$TAG/YxN_UPDATED_INTERNAL_HERE.exe"
+          
+          # 4. File ka Size nikaalo
           curl -sL "$URL" -o temp.exe
           SIZE=$(stat -c%s temp.exe)
           rm temp.exe
           
+          # 5. Nayi XML file likho
           echo '<item>' > update.xml
           echo "  <version>$VERSION</version>" >> update.xml
           echo "  <size>$SIZE</size>" >> update.xml
           echo "  <url>$URL</url>" >> update.xml
           echo '</item>' >> update.xml
           
+          # 6. Commit and Push
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add update.xml
