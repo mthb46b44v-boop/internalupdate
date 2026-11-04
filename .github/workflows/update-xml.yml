@@ -1,4 +1,4 @@
-name: Auto Update update.xml
+name: Auto Update XML
 
 on:
   release:
@@ -11,37 +11,30 @@ jobs:
   update-xml:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Update update.xml
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const release = context.payload.release;
-            
-            // Tag se version nikalna (jaise v1.0.1 se 1.0.1)
-            const version = release.tag_name.replace(/^v/, '');
-            
-            // Release me pehli uploaded file ka direct link lena
-            const assets = release.assets;
-            if (assets.length === 0) {
-              throw new Error("Release me koi file upload nahi hui hai! Pehle ZIP upload karo.");
-            }
-            const zipUrl = assets[0].browser_download_url;
-
-            // Naya XML content banana
-            const xmlContent = `<item>\n  <version>${version}</version>\n  <url>${zipUrl}</url>\n</item>\n`;
-            
-            // XML file me save karna
-            fs.writeFileSync('update.xml', xmlContent);
-            console.log('update.xml updated successfully with version: ' + version);
-
-      - name: Commit and push changes
+      - name: Update update.xml Automatically
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add update.xml
-          git commit -m "Auto-update update.xml to version ${{ github.event.release.tag_name }}" || exit 0
-          git push
+          # 1. Tag se version nikaalo (jaise v1.0.2 se 1.0.2)
+          VERSION=$(echo "${{ github.event.release.tag_name }}" | sed 's/^v//')
+          
+          # 2. EXE ka direct download link banao
+          URL="https://github.com/mthb46b44v-boop/internalupdate/releases/download/${{ github.event.release.tag_name }}/YxN_UPDATED_INTERNAL_HERE.exe"
+          
+          # 3. Nayi XML file likho
+          echo '<item>' > update.xml
+          echo "  <version>$VERSION</version>" >> update.xml
+          echo "  <url>$URL</url>" >> update.xml
+          echo '</item>' >> update.xml
+          
+          # 4. Check karo ki file change hui ya nahi
+          if git diff --quiet update.xml; then
+            echo "Koi change nahi hua."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add update.xml
+            git commit -m "Auto-Updated version to $VERSION"
+            git push
+          fi
